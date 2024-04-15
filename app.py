@@ -179,4 +179,4 @@ def update_users_json():
 
 #hello_world()
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
