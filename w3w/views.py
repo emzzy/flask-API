@@ -1,12 +1,18 @@
 #from app import app
 from w3w import db
 from w3w.models import User, users_schema, user_schema, Observer, observers_schema, observer_schema, Location
-from flask import jsonify, request, Blueprint, json
+from flask import jsonify, request, Blueprint, json, current_app
 import jwt, datetime
 import what3words
 from functools import wraps
+from flask_swagger_ui import get_swaggerui_blueprint
 
-api = Blueprint('api', __name__) # url_prefix='/api' add for context 
+# w3w API key
+geocoder = what3words.Geocoder("V2QAXYTL")
+# w3w public API server
+geocoder = what3words.Geocoder("V2QAXYTL", endpoint='http://locallhost:custom-end-point')
+
+api = Blueprint('api', __name__, url_prefix='/api') # url_prefix='/api' add for context 
 #view = Blueprint('views', __name__) url_prefix='/api' <- for context
 
 def token_required(f):
@@ -21,7 +27,7 @@ def token_required(f):
             return jsonify({'message': 'a valid token is missing'})
 
         try:
-            data = jwt.decode(token, api.config['SECRET_KEY'], algorithms=['HS256'])
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
         except:
             return jsonify({'message': 'invalid token'})
         
@@ -33,7 +39,7 @@ def hello_world():
     """endpoint used for testing purposes"""
     return "<h1> Hello World <h1>" #{"hello":"world"}
 
-@api.post("/login")
+@api.get("/login")
 def login():
     """endpoint used for authentication"""
     auth = request.authorization
@@ -41,9 +47,10 @@ def login():
     if auth:
         # check if username and password are correct
         if auth.username == "Emmanuel" and auth.password == "APIPassword":
+             secret_key = current_app.config['SECRET_KEY']
              token = jwt.encode({'user': auth.username, 'exp' : datetime.datetime.now() + datetime.timedelta(minutes = 30)},
-                                 api.config ['SECRET_KEY'])
-                          
+                                 secret_key)
+
              return {"token": token}
         else:
             return {"message": "error - username or password incorrect"}, 401
@@ -120,7 +127,7 @@ def update_users_json():
     print(json.dumps(json_data, indent = 4)) # used for debugging purposes
 
     User.query.filter_by(user_id=json_data['user_id']).update(
-        dict 
+        dict
         (
             user_firstname = json_data['user_firstname'],
             user_surname = json_data['user_surname'],
@@ -132,13 +139,21 @@ def update_users_json():
     db.session.commit()
     return {"message": "User's record updated successfully"}
 
-
+# Calling the What3words API
 @api.get('/get-coordinates')
 def get_address_by_coordinates():
     latitude = request.args.get('latitude')
-    longitude = request.arg.get('longitude')
+    longitude = request.args.get('longitude')
 
-    location = Location.query.filter_by(latitude=latitude, longitude=longitude).first()
+    # define a tolerance level for coordinates
+    tolerance = 0.0001
+
+    # Query the database for location
+    location = Location.query.filter(
+    Location.latitude.between(float(latitude) - tolerance, float(latitude) + tolerance),
+    Location.longitude.between(float(longitude) - tolerance, float(longitude) + tolerance)
+    ).first()
+
     if location:
         return jsonify({'address': location.address}), 200
     else:
@@ -146,12 +161,20 @@ def get_address_by_coordinates():
 
 # Getting obervations from what3words
 @api.get('/get-word-address')
+@token_required
 def get_address():
     latitude = request.args.get('lat')
     longitude = request.args.get('long')
 
+    # what3words public API
+    api = what3words.Geocoder("V2QAXYTL")
+
     # convert coordinates to 3-word address
     address = address.convert_to_3wa(what3words.Coordinates(51.484463, -0.195405))
+    
+    # to convert 3 word address to cooridnates
+    res_coordinates = geocoder.convert_to_coordinates('prom.cape.pump')
+    print(res_coordinates)
 
     if address:
         new_location = Location(latitude=latitude, longitude=longitude, address=address)
@@ -161,7 +184,7 @@ def get_address():
     else:
         return jsonify({'error': 'Failed to retrieve address'}), 500
     
-@api.get('/get-coordinates')
+@api.get('/get-coordinatesss')
 def get_coordinates(latitude, longitude):
     
     # to convert 3-word address to cordinates
