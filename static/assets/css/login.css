@@ -1,0 +1,16 @@
+body {
+    background-color: rgb(235, 245, 235);
+}
+.navbar-brand {
+    font-family: Leckerli One;
+    color: #0A0;
+}
+.nav-link {
+    color: black;
+}
+.btn-primary a {
+    color: rgb(235, 245, 235);
+}
+footer {
+    text-align: center;
+}

@@ -1,0 +1,10 @@
+body {
+    background-color: rgb(211, 236, 240);
+}
+.navbar-brand {
+    font-family: Leckerli One;
+    color: #0A0;
+}
+.nav-link {
+    color: black;
+}

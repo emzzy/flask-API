@@ -1,0 +1,19 @@
+
+.navbar-brand {
+    font-family: Leckerli One;
+    color: #0A0;
+}
+.nav-link {
+    color: black;
+}
+.card-title {
+    text-align: center;
+    font-size: 40px;
+    padding-top: 5%;
+}
+.card-text {
+    text-align: center;
+}
+.img-fluid {
+    height: 100%;
+}
